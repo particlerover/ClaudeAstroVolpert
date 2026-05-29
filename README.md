@@ -1,12 +1,17 @@
 # ClaudeAstroVolpert
 
-An onboarding package for using Claude Code in astronomy research.
-Includes a guided setup script, a generalisable CLAUDE.md template, a shared
-constants file, a Claude reference dictionary, and a fully worked example project.
+A Claude Code onboarding package tuned specifically for observational ISM astronomy
+research, using the Volpert code and project architecture framework. Includes a
+guided interactive setup script, a generalisable `CLAUDE.md` project configuration
+template, a shared physical constants file, a Claude reference dictionary, and a
+fully worked example project showing the complete directory structure and workflow.
 
 **Created by**: Carrie Volpert (https://github.com/cvolpert)
 **Created**: 2026-05-29
-**For**: ISM astronomers and radio/IR/JWST observers getting started with Claude Code
+**For**: Observational ISM astronomers working with radio, IR, and JWST data —
+radio continuum and spectral line observers, multi-phase ISM analysts, and anyone
+studying the MW, Local Group, or low-redshift universe who wants a rigorous,
+well-structured Claude Code workflow out of the box.
 
 ---
 
