@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# ClaudeAstroVolpert — git pre-commit hook
+# Auto-updates the "Last Edited / Last Editor" comment in CLAUDE.md whenever
+# the file is committed.
+#
+# INSTALLATION (run once after setting up a new project):
+#   cp /path/to/ClaudeAstroVolpert/hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# How it works:
+#   1. Checks whether CLAUDE.md is staged for this commit.
+#   2. If yes, rewrites the <!-- Last Edited: ... --> comment with the current
+#      date and the committing user's username (from whoami).
+#   3. Re-stages the updated CLAUDE.md so the updated header is included
+#      in the commit.
+
+CLAUDE_FILE="CLAUDE.md"
+
+# Only run if CLAUDE.md is staged
+if ! git diff --cached --name-only | grep -q "^${CLAUDE_FILE}$"; then
+    exit 0
+fi
+
+NOW=$(date +"%Y-%m-%d %H:%M:%S")
+USER=$(whoami)
+
+# Replace the Last Edited comment line (works on macOS and Linux)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS sed requires an empty string argument for -i
+    sed -i '' "s|<!-- Last Edited:.*-->|<!-- Last Edited: ${NOW} | Last Editor: ${USER} -->|" "${CLAUDE_FILE}"
+else
+    sed -i "s|<!-- Last Edited:.*-->|<!-- Last Edited: ${NOW} | Last Editor: ${USER} -->|" "${CLAUDE_FILE}"
+fi
+
+# Re-stage the updated CLAUDE.md
+git add "${CLAUDE_FILE}"
+
+echo "[pre-commit] Updated CLAUDE.md header: Last Edited: ${NOW} | ${USER}"
+exit 0
