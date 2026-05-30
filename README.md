@@ -64,10 +64,11 @@ That's it. No build step, no dependencies beyond Python 3 (which you already hav
 ## Quick Start
 
 Run the setup script as a plain Python script from any terminal — you do **not**
-need to be inside a Claude Code session to run it:
+need to be inside a Claude Code session to run it. Make sure you are in the
+parent directory where you git cloned ClaudeAstroVolpert:
 
 ```bash
-python3 ~/ClaudeAstroVolpert/startup.py
+python3 ClaudeAstroVolpert/startup.py
 ```
 
 The script handles all the mechanical setup (directory structure, template files,
