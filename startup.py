@@ -269,11 +269,13 @@ def launch_claude(project_dir):
     info(f"""\
     Mechanical setup is complete. Launching Claude in your new project...
 
-    Claude will read CLAUDE.md and guide you through the rest interactively:
-      - Adding and digesting background literature
-      - Organising any existing data or analysis code
-      - Customising CLAUDE.md for your specific project
-      - Writing your first where_I_left_off.md
+    If this is your first time using Claude Code, it will prompt you to
+    sign in before anything else. Follow the sign-in steps (it will open
+    a browser or give you a URL). Once signed in, type:
+
+        Read claude.md
+
+    and onboarding will begin. You only need to sign in once.
 
     When you are done with onboarding, type /exit to close Claude.
     You can start a new session any time with:
