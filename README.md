@@ -40,18 +40,47 @@ ClaudeAstroVolpert/
     └── ...
 ```
 
+## Installation
+
+Everything can be done from the command line — no GitHub UI needed.
+
+**Step 1 — Install Claude Code** (if you haven't already):
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+Or see [Anthropic's installation docs](https://docs.anthropic.com/claude-code) for
+alternative install methods (pip, brew, etc.).
+
+**Step 2 — Clone this repository** to wherever you want to keep it
+(e.g. `~/software/` or `~/`). This is the *package* location, not your project:
+```bash
+git clone https://github.com/particlerover/ClaudeAstroVolpert.git
+```
+
+That's it. No build step, no dependencies beyond Python 3 (which you already have).
+
+---
+
 ## Quick Start
 
-1. Install Claude Code: see [Anthropic's documentation](https://docs.anthropic.com/claude-code)
-2. Open a terminal in the directory where you want your new project to live
-3. Start Claude Code: `claude`
-4. Run the setup script:
-   ```
-   !python3 /path/to/ClaudeAstroVolpert/startup.py
-   ```
+Once installed, open a terminal in the directory where you want your **new research
+project** to live, start Claude Code, and run the setup script:
 
-The script will walk you through everything interactively — project naming,
-directory creation, literature digest, data organisation, and CLAUDE.md customisation.
+```bash
+cd ~/Research          # or wherever your projects live
+claude                 # start Claude Code
+```
+
+Then inside the Claude Code session:
+```
+!python3 ~/ClaudeAstroVolpert/startup.py
+```
+
+The script will walk you through everything interactively — choosing a project
+location, literature digest, data organisation, and CLAUDE.md customisation.
+
+> **Note for Windows users**: use `python` instead of `python3` if that is how
+> Python 3 is registered on your system. The script is fully cross-platform.
 
 ## What You Get
 
