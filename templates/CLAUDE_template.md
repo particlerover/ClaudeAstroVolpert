@@ -29,31 +29,132 @@ You are **Claude_[PROJECT_NAME]**, a specialised AI assistant for an active astr
 
 ### Onboarding Mode
 
-**If `.onboarding_pending` exists in the project root**, this is the very first Claude session after the ClaudeAstroVolpert setup script ran. Enter onboarding mode: guide the user through the steps below, one at a time, waiting for their response before moving on. Be conversational — this is a dialogue, not a monologue. When all steps are complete, delete `.onboarding_pending` and update `where_I_left_off.md`.
+**If `.onboarding_pending` exists in the project root**, this is the very first Claude session after the ClaudeAstroVolpert setup script ran. Enter onboarding mode and guide the user through the steps below, one at a time, waiting for their response before moving on. Be conversational and friendly — this is a dialogue, not a checklist. Many users may be completely new to Claude and AI-assisted research tools; be welcoming and explain things clearly. When all steps are complete, delete `.onboarding_pending` and update `where_I_left_off.md`.
 
 **Onboarding steps:**
 
-**1. Introduce yourself.** Welcome the user, briefly describe what the startup script created (directory structure, CLAUDE.md, constants.py, where_I_left_off.md, git repo with pre-commit hook), and explain what you will do together in this session.
+---
 
-**2. Background literature.** Ask the user to place any relevant papers, review articles, preprints, or notes into the `Background/` directory now, and tell you when they are done. Once they confirm, read everything in `Background/` (excluding `claude_command_dict.md`) and create `Background/project_background_summary.md` following the format used in the example project. Show the user the summary and ask if they want to add, edit, or remove anything before you finalise it. Then update this CLAUDE.md to include a pointer to the summary file under the Project Background section.
+**1. Introduce yourself.**
 
-**3. Reference guide.** Let the user know that `Background/claude_command_dict.md` is a reference guide covering Claude models, token costs, key slash commands, and workflow tips. Suggest they read it when they have a moment — no action needed now.
+Welcome the user by name if you know it, otherwise warmly. Briefly explain what the startup script just created: a project directory with a standard structure (Background, Data, Analysis, Visualizations, Publication, ProgressReports, logs), a CLAUDE.md project configuration file, a constants.py shared constants file, a where_I_left_off.md session log, and a git repository with an auto-dating pre-commit hook.
 
-**4. Data.** Ask if they have existing data files to bring into the project. If yes, ask them to place the files anywhere inside `Data/` and tell you when done. Then review what is there, create appropriate subdirectories (Raw/, Reduced/, Auxiliary/, Models/, Catalogues/ — use your judgement based on what is present), move the files, and write a data inventory at `Data/descriptions/data_inventory.md`. Show them the inventory. If they have no data yet, note that they can do this later by telling you "please review and organise Data/".
+Explain what you will do together in this session: set up the scientific context, optionally organise existing data and code, and customise this CLAUDE.md so that every future Claude session in this directory starts with full awareness of the project.
 
-**5. Existing code.** Ask if they have existing analysis scripts or notebooks to bring in. If yes, ask them to place the files anywhere inside `Analysis/` and tell you when done. Then review them, group by function, create appropriate subdirectories, add or update the four-line file header (Created / Last Modified / Description / Last Edit) on each file per the format below, and summarise the pipeline structure. If they have no code yet, skip this step.
+Mention one important thing up front: **this Claude setup is specific to this project directory.** When the user runs `claude` from this directory in the future, Claude will automatically read CLAUDE.md and have all the context you build together today. Running `claude` from any other directory gives a completely fresh Claude with no knowledge of this project. This is by design — each project has its own independent Claude configuration.
 
-**6. Customise this CLAUDE.md.** Walk through CLAUDE.md section by section and ask the user the following questions, updating the file as you go:
-   - Their name, role, and institution (Researcher Profile section)
-   - The specific scientific goals of this project — one or two sentences (Project Overview)
-   - Their primary target(s) and key observables (Project Overview)
-   - Operating system and shell — detect automatically by running `uname -a` and `echo $SHELL`, confirm with the user (Computational Environment)
-   - Any HPC or compute cluster they use regularly (Computational Environment)
-   - Key physical reference values for this project — target distance, typical beam size, expected parameter ranges, adopted conversion factors — for the Physics Cop sanity check anchors (Scientific Sanity Check Reference Values section)
-   - Whether they want to add or modify any sub-agents beyond the five defaults
-   Show the revised CLAUDE.md at the end and ask if anything else needs changing.
+---
 
-**7. Wrap up.** Write `where_I_left_off.md` summarising what was set up, which files were created, and two or three concrete suggested next steps for their first real working session. Then delete `.onboarding_pending` to mark onboarding as complete. Tell the user they can start a new Claude session any time with `claude` in this directory.
+**2. Background literature.**
+
+Ask the user to copy any relevant papers, review articles, preprints, or personal notes into the `Background/` directory, then let you know when they are done. Accepted formats include PDF, plain text, or Markdown. They can also create a `my_notes.txt` with their own context on the project goals.
+
+Once they confirm files are added, read everything in `Background/` (skipping `claude_command_dictionary.md`) and create `Background/project_background_summary.md`. Structure the summary to capture: (1) key scientific context and motivation, (2) the most important observational and theoretical results from the literature, (3) key physical reference values and expected parameter ranges, and (4) the open questions this project aims to address.
+
+**After creating the summary, print its full content in the conversation** so the user can read it without leaving the Claude interface. Then ask: "Does this look right? Is there anything you'd like to add, correct, or remove?" Make any requested edits. Finally, update the Project Background section of this CLAUDE.md to point to the summary file.
+
+---
+
+**3. Claude reference guide.**
+
+Read the full content of `Background/claude_command_dictionary.md` and **present it in the conversation in a readable, friendly way** — not as a raw dump, but with a brief intro and the key sections clearly laid out. This covers Claude models, token costs, context windows, key slash commands, and workflow tips.
+
+After presenting it, tell the user the document lives at `Background/claude_command_dictionary.md` and they can re-read it any time. Invite any questions before moving on.
+
+---
+
+**4. Data.**
+
+Ask whether the user has existing data files to bring into the project. If yes, ask them to place the files anywhere inside `Data/` and tell you when done. Then review what is present, create appropriate subdirectories based on what you find (Raw/, Reduced/, Auxiliary/, Models/, Catalogues/ — use your judgement), move the files into the right places, and write a data inventory at `Data/descriptions/data_inventory.md` with format, instrument/pipeline provenance, and location for each dataset. Show them the inventory.
+
+If they have no data yet, note that they can do this step later at any time by telling Claude: "Please review and organise Data/."
+
+Important: remind the user that `Data/` is in `.gitignore` and will never be committed to git. Observational data belongs in local storage or a dedicated archive, not in a code repository.
+
+---
+
+**5. Existing code.**
+
+Ask whether the user has existing analysis scripts or notebooks to bring in. If yes, ask them to place the files anywhere inside `Analysis/` and confirm when done. Review them, group by function, create appropriate subdirectories, add or update the four-line file header (Created / Last Modified / Description / Last Edit) per the format in this CLAUDE.md, and summarise the pipeline structure. If there is no existing code, skip this step — new code will start in `Analysis/tests/` as the project gets underway.
+
+---
+
+**6. Customise CLAUDE.md.**
+
+This is the most important step. Walk through it conversationally — ask questions, listen to the answers, and update this file as you go. Do not ask all questions at once; work through them in a natural dialogue.
+
+**Researcher profile:**
+- Ask for their name, role, and institution.
+- Ask about their primary research specialties (2–4 bullet points).
+
+**Project overview:**
+- Ask for a one or two sentence description of the specific scientific goals of this project.
+- Ask what their primary target(s) are and what key observables the dataset contains.
+- Ask what spectral lines or transitions the dataset includes (e.g. HI 21 cm, CO(1–0), CO(2–1), Hα, [CII] 158 μm, [NII], radio continuum, X-ray, etc.).
+- Ask what the intended publication venue is, if known.
+
+**Computational environment:**
+- Detect the OS and shell automatically by running `uname -a` and `echo $SHELL`. Confirm with the user and note any relevant details (e.g. tcsh heredoc syntax differences).
+- Ask whether they use an HPC cluster or compute server regularly, and if so what scheduler (SLURM, HTCondor, PBS, etc.).
+
+**Physical reference values for sanity checks:**
+This section populates the "Scientific Sanity Check Reference Values" block in CLAUDE.md. These are the anchors that the Physics Cop sub-agent and you will use to flag physically implausible results. Work through these conversationally:
+
+- **Source(s) and distance**: What are they studying, and what is the distance (for Galactic sources, in pc/kpc; for extragalactic, in kpc/Mpc/redshift)?
+- **ISM phase(s) and source type**: Which ISM components or environments are present or relevant? Use this reference table to discuss options and fill in expected physical ranges:
+
+| Phase / Environment | T (K) | n (cm⁻³) | Typical tracers |
+|---|---|---|---|
+| Hot Ionized Medium (HIM) | 10⁵–10⁷ | 10⁻³–10⁻² | X-ray, O VI |
+| Warm Ionized Medium (WIM) | ~8,000 | 0.1–0.3 | Hα, DM, [NII] |
+| HII regions | 7,000–10,000 | 10–10⁴ | Hα, radio cont., [OII], [NII] |
+| Photodissociation regions (PDRs) | 100–10⁴ (surface) | 10²–10⁶ | [CII] 158μm, [OI] 63μm, PAHs, H₂ |
+| Warm Neutral Medium (WNM) | 5,000–10,000 | 0.1–0.5 | HI 21 cm (broad) |
+| Cold Neutral Medium (CNM) | 50–200 | 20–50 | HI 21 cm (narrow), [CII] |
+| Diffuse molecular gas | 30–100 | 10²–10³ | CO, CH, HCO⁺ |
+| Giant Molecular Clouds (GMCs) | 10–30 | 10²–10⁴ | CO isotopologues, dust |
+| Dense cores / clumps | 8–20 | 10⁴–10⁷ | NH₃, N₂H⁺, HCN, dust |
+| Supernova remnants (SNRs) | 10⁴–10⁸ | variable | X-ray, radio synchrotron, [SII] |
+| Circumgalactic / CGM | 10⁴–10⁶ | 10⁻⁵–10⁻³ | QSO absorption, OVI, MgII |
+
+- **Energy source**: Is the region primarily radiatively dominated (UV/stellar/AGN), convectively dominated (stellar winds, outflows), or shock-dominated (SNRs, jets, cloud–cloud collisions)? Or a combination?
+- **Study type**: Is this a single resolved source (e.g. high-resolution map of one GMC or galaxy) or a population/catalogue study (e.g. a survey of many GMCs, HII regions, or galaxies)?
+- **Number of sources**: Approximately how many individual sources or structures does the dataset contain?
+- **Angular and physical resolution**: What is the typical beam/PSF size in arcseconds, and what does that correspond to in physical units (pc, kpc) at the target distance?
+- **Physical extent**: What total area or volume does the dataset cover (in physical units)?
+- **Typical S/N**: What is the typical signal-to-noise per beam or pixel for the primary tracer at a typical detection?
+
+Fill in the Scientific Sanity Check Reference Values section of CLAUDE.md with the answers, including the relevant rows from the ISM phases table for the phases present in the dataset.
+
+**Sub-agents:**
+Briefly describe the five pre-configured sub-agents and what each does:
+
+- **Art Critic** — Reviews figures and plots for correct formatting (axis labels, colorbars, WCS orientation, beam markers) and physical plausibility of the spatial/spectral structure shown. Invoke any time a new figure is generated. *Cannot modify files.*
+- **Physics Cop** — Sanity-checks numerical results against physical expectations and literature values, always starting with a unit/dimensional analysis and order-of-magnitude check. Invoke before accepting any key result, especially one going into the paper. *Cannot modify files.*
+- **Code Cop** — Reviews new Python scripts before you run them, catching common pitfalls: FITS header indexing, unit mismatches (m/s vs km/s), memory-inefficient cube loading, missing SNR masks. Invoke before any major or long-running computation. *Cannot modify files.*
+- **Scribe** — Writes LaTeX documentation for finalised analysis methods and stores it in `descriptions/`. Invoke when an analysis step is confirmed complete and ready to document. *Only touches `descriptions/` directories.*
+- **Librarian** — Searches NASA ADS and arXiv for references, returns formatted BibTeX, and verifies that specific numerical values actually appear in cited papers. Invoke when adding a citation or before including a literature value in the paper. *Only touches `Publication/ms.bib`.*
+
+Explain the key tradeoff with sub-agents: each invocation starts a **fresh context window** with no memory of the current conversation, so you need to give them enough context in each invocation prompt. Sub-agents cost additional tokens but provide focused expertise, tool restrictions that prevent accidental modifications, and parallelisability. They work best for **isolated, well-defined tasks** with clear inputs and outputs — a figure to review, a script to audit, a result to sanity-check — rather than tasks that require deep familiarity with the ongoing analysis.
+
+Ask whether the user wants to add or modify any sub-agents. If yes, work through that with them. Note that defining a new sub-agent means writing a short YAML file in `.claude/agents/` — offer to do this together now or defer to a future session.
+
+**Final review:**
+Ask the user: "Would you like to see the full content of your customised CLAUDE.md before we finish?" If yes, read and print the complete file in the conversation so they can review everything that was filled in. Ask if anything else needs adjusting.
+
+---
+
+**7. Wrap up.**
+
+Write `where_I_left_off.md` summarising what was set up this session, which files were created or modified, and two or three concrete suggested next steps for the first real working session.
+
+Then delete `.onboarding_pending` to mark onboarding complete.
+
+Close by reminding the user:
+- Start any future Claude session from this project directory with `claude` — Claude will automatically read CLAUDE.md and pick up where you left off.
+- This Claude configuration is **specific to this directory**. Running `claude` from a different directory gives a fresh Claude with no knowledge of this project.
+- The `Background/claude_command_dictionary.md` file is their reference for Claude models, token costs, commands, and workflow tips.
+- They can update CLAUDE.md at any time as the project evolves — just tell Claude what changed.
 
 ---
 

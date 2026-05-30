@@ -371,8 +371,8 @@ def create_project_structure(project_dir):
             shutil.copy(src, dst)
 
     # Copy command dictionary
-    docs_src = PACKAGE_DIR / "docs" / "claude_command_dict.md"
-    docs_dst = project_dir / "Background" / "claude_command_dict.md"
+    docs_src = PACKAGE_DIR / "docs" / "claude_command_dictionary.md"
+    docs_dst = project_dir / "Background" / "claude_command_dictionary.md"
     if docs_src.exists() and not docs_dst.exists():
         shutil.copy(docs_src, docs_dst)
 
@@ -501,6 +501,15 @@ def main():
     print(f"  {DIM}{_CH['tee']}{RESET} {BOLD}constants.py{RESET}         {DIM}— shared physical constants{RESET}")
     print(f"  {DIM}{_CH['tee']}{RESET} {BOLD}where_I_left_off.md{RESET}  {DIM}— session handoff log{RESET}")
     print(f"  {DIM}{_CH['bend']} .git/ + pre-commit hook  — auto-dates CLAUDE.md on each commit{RESET}")
+    print()
+
+    # Remind user what to type when Claude opens
+    rule = _CH["hrule"] * (COLS - 4)
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
+    print(f"  {BOLD}{BYELLOW}{_CH['tri']} WHEN CLAUDE OPENS, TYPE THIS:{RESET}")
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
+    print(f"  {BWHITE}read CLAUDE.md{RESET}")
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
     print()
 
     launch_claude(project_dir)

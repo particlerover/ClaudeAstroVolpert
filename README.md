@@ -27,7 +27,7 @@ ClaudeAstroVolpert/
 │   ├── constants_template.py     — Shared physical constants template
 │   └── where_I_left_off_template.md  — Session handoff log template
 ├── docs/
-│   └── claude_command_dict.md    — Claude models, tokens, commands reference
+│   └── claude_command_dictionary.md    — Claude models, tokens, commands reference
 └── example_project/              — Worked example showing the full structure
     ├── CLAUDE.md                 — Example CLAUDE.md (Local Group HI project)
     ├── constants.py              — Example constants.py (partially filled)
@@ -102,7 +102,7 @@ up right where the setup left off.
 
 ## Reading Order for New Users
 
-1. Read `docs/claude_command_dict.md` for Claude basics (models, tokens, commands)
+1. Read `docs/claude_command_dictionary.md` for Claude basics (models, tokens, commands)
 2. Look through `example_project/CLAUDE.md` to see what a filled-in config looks like
 3. Browse the `example_project/Analysis/` files to see the coding and documentation conventions
 4. Run `startup.py` to create your own project
