@@ -467,6 +467,22 @@ def main():
         "an interactive onboarding session.",
     ])
 
+    # Check for claude CLI before doing any work
+    if not _claude_available():
+        print(f"  {BYELLOW}{BOLD}Claude Code is not installed (the 'claude' command was not found).{RESET}")
+        print()
+        info("""\
+    Claude Code is required to complete project onboarding. Install it first:
+
+      npm install -g @anthropic-ai/claude-code
+
+    Or see the full installation options at:
+      https://docs.anthropic.com/claude-code
+
+    Once installed, re-run this script.
+    """)
+        sys.exit(1)
+
     info("""\
     This script will:
       1. Ask where you want your new project directory
