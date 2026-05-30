@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Created: 2026-05-29 00:00:00
-# Last Modified: 2026-05-29 00:00:00
+# Last Modified: 2026-05-29 12:00:00
 # Description: Interactive setup script for a new Claude-assisted astronomy research
 #   project. Walks the user through project creation, directory structure setup,
 #   and onboarding to Claude Code. For AI-assisted steps (literature digest, data
 #   sorting, code sorting), the script prints exact prompts to paste into Claude.
-# Last Edit: Initial creation for ClaudeAstroVolpert package.
+# Last Edit: Fix banner/info wrapping bugs; add ANSI color coding throughout.
 
 """
 ClaudeAstroVolpert — Interactive Project Setup
@@ -32,69 +32,133 @@ try:
     COLS = os.get_terminal_size().columns
 except OSError:
     COLS = 80
-COLS = min(COLS, 90)
+COLS = min(max(COLS, 40), 100)  # clamp to [40, 100] to avoid edge cases
+
+
+# ─── ANSI colour codes ────────────────────────────────────────────────────────
+# Used to enable/disable colour if stdout is not a tty (e.g. piped to a file).
+_USE_COLOR = sys.stdout.isatty()
+
+def _c(*codes):
+    return "\033[" + ";".join(str(c) for c in codes) + "m" if _USE_COLOR else ""
+
+RESET   = _c(0)
+BOLD    = _c(1)
+DIM     = _c(2)
+CYAN    = _c(36)
+YELLOW  = _c(33)
+GREEN   = _c(32)
+RED     = _c(31)
+MAGENTA = _c(35)
+BCYAN   = _c(96)   # bright cyan
+BYELLOW = _c(93)   # bright yellow
+BGREEN  = _c(92)   # bright green
+BWHITE  = _c(97)   # bright white
 
 
 # ─── Display helpers ──────────────────────────────────────────────────────────
 
-def hr(char="─"):
-    print(char * COLS)
+def _wrap_line(line, width, indent=0):
+    """Wrap a single plain-text line, preserving its leading indentation."""
+    stripped = line.lstrip()
+    lead = len(line) - len(stripped)
+    prefix = " " * (indent + lead)
+    if not stripped:
+        return ""
+    return textwrap.fill(
+        stripped, max(width - indent - lead, 10),
+        initial_indent=prefix, subsequent_indent=prefix,
+    )
 
-def banner(text):
-    hr("═")
-    lines = textwrap.wrap(text, COLS - 4)
-    for line in lines:
-        print(f"  {line}")
-    hr("═")
+
+def hr(char="-", color=CYAN):
+    """Print a full-width horizontal rule."""
+    print(f"{color}{char * COLS}{RESET}")
+
+
+def banner(lines):
+    """
+    Print a bordered banner.  lines is either a list of strings or a single
+    newline-delimited string.  Line 0 = title (bold white), line 1 = subtitle
+    (cyan), remainder = body text (dim).  Empty lines print as blank rows.
+    """
+    if isinstance(lines, str):
+        lines = lines.split("\n")
+
+    print(f"{BCYAN}{BOLD}{'=' * COLS}{RESET}")
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line:
+            print()
+            continue
+        if i == 0:
+            color = BOLD + BWHITE
+        elif i == 1:
+            color = CYAN
+        else:
+            color = DIM
+        # Wrap the plain line first, then apply colour per wrapped line.
+        width = COLS - 4
+        for wline in textwrap.wrap(line, width) or [""]:
+            print(f"  {color}{wline}{RESET}")
+    print(f"{BCYAN}{BOLD}{'=' * COLS}{RESET}")
+
 
 def section(num, title):
+    """Print a numbered step header."""
     print()
-    hr()
-    print(f"  STEP {num}: {title}")
-    hr()
+    hr("-", color=CYAN)
+    print(f"  {BOLD}{YELLOW}STEP {num}:{RESET} {BOLD}{BWHITE}{title}{RESET}")
+    hr("-", color=CYAN)
     print()
+
 
 def info(text, indent=2):
-    prefix = " " * indent
-    for paragraph in text.strip().split("\n\n"):
-        wrapped = textwrap.fill(paragraph.strip(), COLS - indent,
-                                initial_indent=prefix, subsequent_indent=prefix)
-        print(wrapped)
+    """
+    Print body text preserving line structure within paragraphs.
+    Splits on double-newlines for paragraphs, single newlines for lines —
+    so numbered lists and indented blocks render correctly.
+    Uses textwrap.dedent to strip Python source indentation first.
+    """
+    text = textwrap.dedent(text).strip()
+    for para in text.split("\n\n"):
+        for line in para.split("\n"):
+            wrapped = _wrap_line(line, COLS, indent)
+            if wrapped:
+                print(wrapped)
+            else:
+                print()
         print()
 
-def bullet(items, indent=4):
-    prefix = " " * indent
-    for item in items:
-        lines = textwrap.wrap(item, COLS - indent - 2,
-                              initial_indent=f"{prefix}• ",
-                              subsequent_indent=f"{prefix}  ")
-        print("\n".join(lines))
 
 def claude_prompt_box(label, prompt_text):
-    """Print a formatted box with a prompt the user should give to Claude."""
+    """Print a highlighted box containing the prompt to give Claude."""
+    width = COLS - 6
     print()
-    hr("┄")
-    print(f"  ► TELL CLAUDE:")
-    hr("┄")
-    lines = textwrap.wrap(prompt_text.strip(), COLS - 6)
-    for line in lines:
-        print(f"  │  {line}")
-    hr("┄")
+    print(f"{BYELLOW}{BOLD}  {'─' * (COLS - 4)}{RESET}")
+    print(f"  {BOLD}{BYELLOW}► TELL CLAUDE:{RESET}")
+    print(f"{BYELLOW}{BOLD}  {'─' * (COLS - 4)}{RESET}")
+    for line in prompt_text.strip().split("\n"):
+        for wline in textwrap.wrap(line.strip(), width) or [""]:
+            print(f"  {BWHITE}{wline}{RESET}")
+    print(f"{BYELLOW}{BOLD}  {'─' * (COLS - 4)}{RESET}")
     print()
 
+
 def pause(msg="Press Enter when ready to continue..."):
-    print(f"\n  ▶  {msg}")
+    print(f"\n  {BGREEN}▶{RESET}  {msg}")
     try:
         input("     ")
     except KeyboardInterrupt:
         print("\n\nSetup interrupted. Re-run startup.py to resume.")
         sys.exit(0)
 
+
 def ask(prompt, default=None):
     if default:
-        full_prompt = f"  ▶  {prompt} [{default}]: "
+        full_prompt = f"  {GREEN}▶{RESET}  {prompt} [{default}]: "
     else:
-        full_prompt = f"  ▶  {prompt}: "
+        full_prompt = f"  {GREEN}▶{RESET}  {prompt}: "
     try:
         val = input(full_prompt).strip()
     except KeyboardInterrupt:
@@ -226,19 +290,19 @@ def create_project_structure(project_dir):
         shutil.copy(hook_src, hook_dst)
         hook_dst.chmod(0o755)  # make executable
 
-    print(f"  ✓  Project directory created: {project_dir}")
+    print(f"  {BGREEN}✓{RESET}  {BOLD}Project directory created:{RESET} {MAGENTA}{project_dir}{RESET}")
     print()
-    print("  Structure:")
+    print(f"  {DIM}Structure:{RESET}")
     for name, desc in TOP_LEVEL_DIRS:
-        print(f"    {name}/  — {desc}")
+        print(f"    {CYAN}{name}/{RESET}  {DIM}— {desc}{RESET}")
     for parent in METADATA_PARENTS:
         for sub in METADATA_SUBDIRS:
-            print(f"    {parent}/{sub}/")
-    print(f"    CLAUDE.md")
-    print(f"    constants.py")
-    print(f"    where_I_left_off.md")
-    print(f"    .gitignore")
-    print(f"    .git/hooks/pre-commit  — auto-updates CLAUDE.md header on each commit")
+            print(f"    {DIM}{parent}/{sub}/{RESET}")
+    print(f"    {BOLD}CLAUDE.md{RESET}")
+    print(f"    {BOLD}constants.py{RESET}")
+    print(f"    {BOLD}where_I_left_off.md{RESET}")
+    print(f"    {DIM}.gitignore{RESET}")
+    print(f"    {DIM}.git/hooks/pre-commit{RESET}  {DIM}— auto-updates CLAUDE.md header on each commit{RESET}")
 
 
 # ─── Individual steps ─────────────────────────────────────────────────────────
@@ -246,30 +310,41 @@ def create_project_structure(project_dir):
 def step_1_project_name(cwd):
     section(1, "PROJECT NAME & DIRECTORY SETUP")
 
-    info("""\
+    info(f"""\
     This script will create a new project directory with a standardised structure
     for Claude-assisted astronomical research.
 
-    The new directory will be created here:
-    """ + f"    {cwd}")
+    Enter the full path where you want the project to live, including the project
+    directory name itself. Use ~ for your home directory. Examples:
+
+      ~/Research/GalacticFilaments_2026
+      ~/projects/JWST_M33_ISM
+      /data/projects/HI_LocalGroup_Survey
+
+    (Your current working directory is: {cwd})
+    """)
 
     while True:
-        name = ask("Enter a name for your new project directory\n  "
-                   "   (e.g. 'GalacticFilaments_2026', 'JWST_M33_ISM', 'HI_LocalGroup')")
-        if not name:
-            print("  ✗  Please enter a name.")
+        raw = ask("Full path for the new project directory\n"
+                  "     (e.g. ~/Research/GalacticFilaments_2026)")
+        if not raw:
+            print(f"  {RED}✗{RESET}  Please enter a path.")
             continue
-        name = name.replace(" ", "_")
-        project_dir = Path(cwd) / name
+
+        # Expand ~ and any env vars, then resolve to absolute
+        project_dir = Path(os.path.expandvars(raw)).expanduser().resolve()
+        name = project_dir.name.replace(" ", "_")
+        project_dir = project_dir.parent / name  # sanitised name
 
         if project_dir.exists():
-            print(f"  ✗  '{name}' already exists. Choose another name, or delete it first.")
+            print(f"  {RED}✗{RESET}  '{project_dir}' already exists. Choose a different path.")
             continue
 
-        confirm = ask(f"Create project at: {project_dir}\n     Confirm? [Y/n]")
+        print(f"\n  Resolved path: {MAGENTA}{project_dir}{RESET}")
+        confirm = ask("Create project here? [Y/n]")
         if confirm.lower() in ("", "y", "yes"):
             break
-        print("  Re-enter name.")
+        print("  Re-enter path.")
 
     create_project_structure(project_dir)
     state = load_state(project_dir)
@@ -354,7 +429,7 @@ def step_3_command_dictionary(project_dir):
     Take a few minutes to read through it. It will save you a lot of confusion
     later. You can always find it at:
     """)
-    print(f"    {project_dir}/Background/claude_command_dict.md")
+    print(f"    {MAGENTA}{project_dir}/Background/claude_command_dict.md{RESET}")
     print()
 
     pause("Press Enter when you are ready to continue.")
@@ -454,14 +529,14 @@ def step_6_directory_summary(project_dir):
     role — Claude understands and respects this layout by default.
     """)
 
-    print(f"  {Path(project_dir).name}/")
+    print(f"  {BOLD}{BWHITE}{Path(project_dir).name}/{RESET}")
     for name, desc in TOP_LEVEL_DIRS:
-        print(f"  ├── {name}/")
-        print(f"  │     {desc}")
-    print(f"  ├── CLAUDE.md           — Claude's project instructions (edit this)")
-    print(f"  ├── constants.py        — Shared physical constants (import everywhere)")
-    print(f"  ├── where_I_left_off.md — Session handoff log (auto-updated by Claude)")
-    print(f"  └── .gitignore          — Data/ and scratch files excluded from git")
+        print(f"  {DIM}├──{RESET} {CYAN}{name}/{RESET}")
+        print(f"  {DIM}│     {desc}{RESET}")
+    print(f"  {DIM}├──{RESET} {BOLD}CLAUDE.md{RESET}           {DIM}— Claude's project instructions (edit this){RESET}")
+    print(f"  {DIM}├──{RESET} {BOLD}constants.py{RESET}        {DIM}— Shared physical constants (import everywhere){RESET}")
+    print(f"  {DIM}├──{RESET} {BOLD}where_I_left_off.md{RESET} {DIM}— Session handoff log (auto-updated by Claude){RESET}")
+    print(f"  {DIM}└── .gitignore          — Data/ and scratch files excluded from git{RESET}")
     print()
 
     info("""\
@@ -657,7 +732,7 @@ def final_summary(project_dir, project_name):
 
     Good luck with the research!
     """)
-    hr("═")
+    print(f"{BCYAN}{BOLD}{'=' * COLS}{RESET}")
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -665,15 +740,15 @@ def final_summary(project_dir, project_name):
 def main():
     cwd = os.getcwd()
 
-    banner(
-        "ClaudeAstroVolpert — Astronomy Research Starter\n"
-        "by Carrie Volpert  |  github.com/cvolpert\n"
-        "─" * 40 + "\n"
-        "Interactive project setup for Claude Code users.\n"
-        "This script will walk you through setting up a new Claude-assisted "
-        "research project with a standard directory structure, configuration "
-        "files, and onboarding to Claude Code best practices."
-    )
+    banner([
+        "ClaudeAstroVolpert — Astronomy Research Starter",
+        "by Carrie Volpert  |  github.com/cvolpert",
+        "",
+        "Interactive project setup for Claude Code users.",
+        "This script will walk you through setting up a new Claude-assisted",
+        "research project with a standard directory structure, configuration",
+        "files, and onboarding to Claude Code best practices.",
+    ])
 
     info("""\
     You will be asked to:
