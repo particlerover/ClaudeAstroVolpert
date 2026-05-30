@@ -1,7 +1,7 @@
 # ClaudeAstroVolpert
 
 A Claude Code onboarding package tuned specifically for observational ISM astronomy
-research, using the Volpert code and project architecture framework. Includes a
+research, using Volpert's code and project architecture framework. Includes a
 guided interactive setup script, a generalisable `CLAUDE.md` project configuration
 template, a shared physical constants file, a Claude reference dictionary, and a
 fully worked example project showing the complete directory structure and workflow.
