@@ -488,6 +488,23 @@ def main():
 
     project_name, project_dir = step_1_project_name(cwd)
 
+    # Tell the user what is about to happen before we do any work
+    rule = _CH["hrule"] * (COLS - 4)
+    print()
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
+    print(f"  {BOLD}{BYELLOW}{_CH['tri']} NEXT STEPS:{RESET}")
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
+    print(f"  {BWHITE}Generating project structure, then launching Claude to{RESET}")
+    print(f"  {BWHITE}complete project setup.{RESET}")
+    print()
+    print(f"  {BWHITE}After Claude launches, type this in the Claude input line:{RESET}")
+    print()
+    print(f"      {BOLD}Read claude.md{RESET}")
+    print()
+    print(f"  {BWHITE}Claude will then guide you through the rest of setup.{RESET}")
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
+    print()
+
     # Write the onboarding marker that tells Claude to run the setup flow
     marker = Path(project_dir) / ".onboarding_pending"
     marker.write_text(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -501,15 +518,6 @@ def main():
     print(f"  {DIM}{_CH['tee']}{RESET} {BOLD}constants.py{RESET}         {DIM}— shared physical constants{RESET}")
     print(f"  {DIM}{_CH['tee']}{RESET} {BOLD}where_I_left_off.md{RESET}  {DIM}— session handoff log{RESET}")
     print(f"  {DIM}{_CH['bend']} .git/ + pre-commit hook  — auto-dates CLAUDE.md on each commit{RESET}")
-    print()
-
-    # Remind user what to type when Claude opens
-    rule = _CH["hrule"] * (COLS - 4)
-    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
-    print(f"  {BOLD}{BYELLOW}{_CH['tri']} WHEN CLAUDE OPENS, TYPE THIS:{RESET}")
-    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
-    print(f"  {BWHITE}read CLAUDE.md{RESET}")
-    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
     print()
 
     launch_claude(project_dir)
