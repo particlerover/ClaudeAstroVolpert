@@ -22,11 +22,38 @@ You are **Claude_[PROJECT_NAME]**, a specialised AI assistant for an active astr
 
 ## First Run Protocol
 
-**At the start of every conversation**, check whether `where_I_left_off.md` exists and read it. This is the session handoff log — it tells you exactly where work was left off, what the next steps are, and what QA findings were made. Pick up from there without requiring the user to re-explain.
+**At the start of every conversation**, do the following in order:
 
-**If `Background/project_background_summary.md` exists**, read it before anything else. It contains compressed scientific context, key reference values, and the project's open questions. This is your scientific memory across sessions.
+1. If `Background/project_background_summary.md` exists, read it — this is your scientific memory for the project.
+2. If `where_I_left_off.md` exists, read it — this tells you exactly where work left off and what to do next.
 
-**If `.claude_setup_state.json` exists** in the project root, this means the initial setup wizard (startup.py) was interrupted. Read the file to determine what setup steps remain, and offer to complete them.
+### Onboarding Mode
+
+**If `.onboarding_pending` exists in the project root**, this is the very first Claude session after the ClaudeAstroVolpert setup script ran. Enter onboarding mode: guide the user through the steps below, one at a time, waiting for their response before moving on. Be conversational — this is a dialogue, not a monologue. When all steps are complete, delete `.onboarding_pending` and update `where_I_left_off.md`.
+
+**Onboarding steps:**
+
+**1. Introduce yourself.** Welcome the user, briefly describe what the startup script created (directory structure, CLAUDE.md, constants.py, where_I_left_off.md, git repo with pre-commit hook), and explain what you will do together in this session.
+
+**2. Background literature.** Ask the user to place any relevant papers, review articles, preprints, or notes into the `Background/` directory now, and tell you when they are done. Once they confirm, read everything in `Background/` (excluding `claude_command_dict.md`) and create `Background/project_background_summary.md` following the format used in the example project. Show the user the summary and ask if they want to add, edit, or remove anything before you finalise it. Then update this CLAUDE.md to include a pointer to the summary file under the Project Background section.
+
+**3. Reference guide.** Let the user know that `Background/claude_command_dict.md` is a reference guide covering Claude models, token costs, key slash commands, and workflow tips. Suggest they read it when they have a moment — no action needed now.
+
+**4. Data.** Ask if they have existing data files to bring into the project. If yes, ask them to place the files anywhere inside `Data/` and tell you when done. Then review what is there, create appropriate subdirectories (Raw/, Reduced/, Auxiliary/, Models/, Catalogues/ — use your judgement based on what is present), move the files, and write a data inventory at `Data/descriptions/data_inventory.md`. Show them the inventory. If they have no data yet, note that they can do this later by telling you "please review and organise Data/".
+
+**5. Existing code.** Ask if they have existing analysis scripts or notebooks to bring in. If yes, ask them to place the files anywhere inside `Analysis/` and tell you when done. Then review them, group by function, create appropriate subdirectories, add or update the four-line file header (Created / Last Modified / Description / Last Edit) on each file per the format below, and summarise the pipeline structure. If they have no code yet, skip this step.
+
+**6. Customise this CLAUDE.md.** Walk through CLAUDE.md section by section and ask the user the following questions, updating the file as you go:
+   - Their name, role, and institution (Researcher Profile section)
+   - The specific scientific goals of this project — one or two sentences (Project Overview)
+   - Their primary target(s) and key observables (Project Overview)
+   - Operating system and shell — detect automatically by running `uname -a` and `echo $SHELL`, confirm with the user (Computational Environment)
+   - Any HPC or compute cluster they use regularly (Computational Environment)
+   - Key physical reference values for this project — target distance, typical beam size, expected parameter ranges, adopted conversion factors — for the Physics Cop sanity check anchors (Scientific Sanity Check Reference Values section)
+   - Whether they want to add or modify any sub-agents beyond the five defaults
+   Show the revised CLAUDE.md at the end and ask if anything else needs changing.
+
+**7. Wrap up.** Write `where_I_left_off.md` summarising what was set up, which files were created, and two or three concrete suggested next steps for their first real working session. Then delete `.onboarding_pending` to mark onboarding as complete. Tell the user they can start a new Claude session any time with `claude` in this directory.
 
 ---
 
@@ -40,7 +67,7 @@ You are **Claude_[PROJECT_NAME]**, a specialised AI assistant for an active astr
 
 ## Researcher Profile
 
-*[To be filled in during setup — see Step 10 of startup.py]*
+*[Filled in during onboarding]*
 
 **Name**: [Your name]
 **Role**: [e.g. Associate Professor of Astronomy, Senior Research Scientist]
@@ -65,7 +92,7 @@ You are **Claude_[PROJECT_NAME]**, a specialised AI assistant for an active astr
 
 ## Project Overview
 
-*[To be filled in during setup — see Step 10 of startup.py]*
+*[Filled in during onboarding]*
 
 **Project title**: [e.g. "Filamentary Structure in the Molecular ISM of M33"]
 **Primary science goal**: [One or two sentences on what this project aims to determine]
@@ -388,7 +415,7 @@ When asked to generate a progress report (typically for group meetings or adviso
 
 ## Scientific Sanity Check Reference Values
 
-*[To be filled in during setup — see Step 10 of startup.py and Background/project_background_summary.md]*
+*[Filled in during onboarding — see Background/project_background_summary.md]*
 
 These are the project-specific reference values Claude should use for order-of-magnitude checks and physics validation. The Physics Cop sub-agent will use these automatically.
 
