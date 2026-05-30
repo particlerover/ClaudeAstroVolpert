@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # Created: 2026-05-29 00:00:00
-# Last Modified: 2026-05-29 12:00:00
+# Last Modified: 2026-05-29 13:00:00
 # Description: Interactive setup script for a new Claude-assisted astronomy research
 #   project. Walks the user through project creation, directory structure setup,
-#   and onboarding to Claude Code. For AI-assisted steps (literature digest, data
-#   sorting, code sorting), the script prints exact prompts to paste into Claude.
-# Last Edit: Fix banner/info wrapping bugs; add ANSI color coding throughout.
+#   and onboarding to Claude Code. If the claude CLI is on PATH, AI-assisted steps
+#   (literature digest, data/code organisation, CLAUDE.md customisation) are handled
+#   automatically; otherwise the script prints prompts for manual copy-paste.
+# Last Edit: Auto-invoke claude CLI for AI steps; fall back to TELL CLAUDE boxes.
 
 """
 ClaudeAstroVolpert — Interactive Project Setup
@@ -24,6 +25,7 @@ import sys
 import shutil
 import json
 import textwrap
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -227,6 +229,71 @@ def save_state(project_dir, state):
     path = Path(project_dir) / STATE_FILENAME
     with open(path, "w") as f:
         json.dump(state, f, indent=2)
+
+
+# ─── Claude CLI integration ───────────────────────────────────────────────────
+
+def _claude_available():
+    """Return True if the claude CLI is on PATH."""
+    return shutil.which("claude") is not None
+
+
+def run_claude_step(project_dir, step_name, prompt):
+    """
+    Run a non-interactive Claude task in project_dir.
+
+    If the claude CLI is available, invokes it with --print so the response
+    streams directly to the terminal — no copy-pasting needed.  Uses
+    --dangerously-skip-permissions so Claude can read/write project files
+    without pausing to ask for each action (appropriate for a setup workflow
+    where the user has explicitly triggered each step).
+
+    Falls back to printing a TELL CLAUDE box for manual copy-paste if the
+    claude CLI is not found.
+
+    Returns True if Claude handled it automatically, False if manual.
+    """
+    if not _claude_available():
+        claude_prompt_box(step_name, prompt)
+        return False
+
+    print(f"\n  {BCYAN}{BOLD}Claude is handling: {step_name}{RESET}")
+    print(f"  {DIM}Running claude --print in {project_dir} ...{RESET}")
+    print(f"  {DIM}(Using --dangerously-skip-permissions so Claude can "
+          f"read/write files without prompting){RESET}\n")
+    hr("-")
+    subprocess.run(
+        ["claude", "--print", "--dangerously-skip-permissions", prompt],
+        cwd=str(project_dir),
+    )
+    hr("-")
+    print()
+    return True
+
+
+def run_claude_interactive(project_dir, preamble):
+    """
+    Launch an interactive Claude session in project_dir for tasks that
+    require back-and-forth conversation (e.g. CLAUDE.md customisation).
+
+    Prints preamble instructions, then hands control to the user inside
+    a live claude session.  When they type /exit (or Ctrl-C), control
+    returns to the setup script.
+
+    Falls back to a TELL CLAUDE box if the claude CLI is not available.
+    """
+    if not _claude_available():
+        claude_prompt_box("CLAUDE.md CUSTOMISATION", preamble)
+        return False
+
+    print(f"\n  {BCYAN}{BOLD}Launching an interactive Claude session.{RESET}")
+    print(f"  {DIM}Claude will ask you questions and update CLAUDE.md as you go.{RESET}")
+    print(f"  {DIM}When you are finished, type /exit to return to the setup script.{RESET}\n")
+    hr("-")
+    subprocess.run(["claude", "--dangerously-skip-permissions"], cwd=str(project_dir))
+    hr("-")
+    print()
+    return True
 
 
 # ─── Directory layout ─────────────────────────────────────────────────────────
@@ -435,9 +502,7 @@ def step_2_background_literature(project_dir, project_name):
         pause("Press Enter to continue to the next step.")
         return
 
-    info(f"  Found {len(bg_files)} file(s) in Background/. Now tell Claude:")
-
-    claude_prompt_box("LITERATURE DIGEST",
+    prompt = (
         f"Please read all files in the Background/ directory of this project "
         f"({project_name}). Create a structured summary document at "
         f"Background/project_background_summary.md that captures: (1) the key "
@@ -447,10 +512,17 @@ def step_2_background_literature(project_dir, project_name):
         f"etc.) I should remember as sanity-check anchors, and (4) the open "
         f"questions this project aims to address. Then update CLAUDE.md to "
         f"include a pointer to this file so you review it at the start of each "
-        f"session. Finally, show me the summary and ask if I want to add, edit, "
-        f"or remove anything.")
+        f"session. Finally, print the summary."
+    )
 
-    pause("After Claude has created the background summary, press Enter to continue.")
+    info(f"  Found {len(bg_files)} file(s) in Background/.")
+    auto = run_claude_step(project_dir, "LITERATURE DIGEST", prompt)
+
+    if auto:
+        pause("Review the summary above, then press Enter to continue.\n"
+              "     (You can edit Background/project_background_summary.md any time.)")
+    else:
+        pause("After Claude has created the background summary, press Enter to continue.")
 
 
 def step_3_command_dictionary(project_dir):
@@ -510,18 +582,23 @@ def step_4_data(project_dir, project_name):
         pause("Press Enter to continue.")
         return
 
-    info(f"  Found {len(data_files)} file(s) in Data/. Now tell Claude:")
-
-    claude_prompt_box("DATA ORGANISATION",
+    prompt = (
         f"Please review all files currently in the Data/ directory of the "
         f"{project_name} project. Organise them into logical subdirectories "
         f"by data type (e.g. Raw/, Reduced/, Auxiliary/, Models/, Catalogues/). "
         f"Create those subdirectories and move the files. Then write a brief "
         f"summary at Data/descriptions/data_inventory.md listing what each "
         f"dataset is, what format it is in, what instrument or pipeline produced "
-        f"it, and where I can find it. Print the summary for me.")
+        f"it, and where I can find it. Print the summary."
+    )
 
-    pause("After Claude organises the data, press Enter to continue.")
+    info(f"  Found {len(data_files)} file(s) in Data/.")
+    auto = run_claude_step(project_dir, "DATA ORGANISATION", prompt)
+
+    if auto:
+        pause("Review the data summary above, then press Enter to continue.")
+    else:
+        pause("After Claude organises the data, press Enter to continue.")
 
 
 def step_5_existing_code(project_dir, project_name):
@@ -548,9 +625,7 @@ def step_5_existing_code(project_dir, project_name):
         pause("Press Enter to continue.")
         return
 
-    info(f"  Found {len(ana_files)} file(s) in Analysis/. Now tell Claude:")
-
-    claude_prompt_box("CODE ORGANISATION",
+    prompt = (
         f"Please review all files in Analysis/ for the {project_name} project. "
         f"Group them by function (e.g. data reduction, cube preparation, spectral "
         f"fitting, structure finding, visualisation utilities) and create "
@@ -558,9 +633,16 @@ def step_5_existing_code(project_dir, project_name):
         f"For each file, add or update the four-line file header (Created, "
         f"Last Modified, Description, Last Edit) following the format in CLAUDE.md. "
         f"Then print a summary of what the analysis pipeline looks like now and "
-        f"what each script does.")
+        f"what each script does."
+    )
 
-    pause("After Claude organises the code, press Enter to continue.")
+    info(f"  Found {len(ana_files)} file(s) in Analysis/.")
+    auto = run_claude_step(project_dir, "CODE ORGANISATION", prompt)
+
+    if auto:
+        pause("Review the pipeline summary above, then press Enter to continue.")
+    else:
+        pause("After Claude organises the code, press Enter to continue.")
 
 
 def step_6_directory_summary(project_dir):
@@ -715,20 +797,7 @@ def step_9_agents(project_dir):
 def step_10_claude_md_review(project_dir, project_name):
     section(10, "REVIEW AND CUSTOMISE CLAUDE.md")
 
-    info("""\
-    The final step is to read through CLAUDE.md and customise it for your project.
-    Claude will guide you through this interactively — asking about your project
-    goals, computational environment, preferred workflows, and whether you want to
-    add any custom sub-agents.
-
-    After this session, CLAUDE.md will be tailored to you. Every future Claude
-    session in this directory will start with Claude reading it and knowing your
-    project's specifics.
-
-    Tell Claude:
-    """)
-
-    claude_prompt_box("CLAUDE.md CUSTOMISATION",
+    preamble = (
         f"Please guide me through customising the CLAUDE.md file for my new "
         f"project '{project_name}'. Walk through it section by section and ask "
         f"me the relevant questions: (1) my name and research role, (2) the "
@@ -739,9 +808,32 @@ def step_10_claude_md_review(project_dir, project_name):
         f"ranges, distances, or reference values I want the Physics Cop to use "
         f"as sanity-check anchors, and (7) whether I want to add or modify any "
         f"sub-agents beyond the five defaults. Then update CLAUDE.md with my "
-        f"answers and show me the revised version.")
+        f"answers and show me the revised version."
+    )
 
-    pause("After Claude finishes the CLAUDE.md review, press Enter for a final summary.")
+    if _claude_available():
+        info("""\
+    The final step is to customise CLAUDE.md for your project. Claude will open
+    an interactive session right here and walk through it with you — asking about
+    your goals, environment, data types, and sub-agent preferences.
+
+    When you are done, type /exit to close the Claude session and return to the
+    setup script for a final summary.
+        """)
+        run_claude_interactive(project_dir, preamble)
+    else:
+        info("""\
+    The final step is to read through CLAUDE.md and customise it for your project.
+    Claude will guide you through this interactively — asking about your project
+    goals, computational environment, preferred workflows, and whether you want to
+    add any custom sub-agents.
+
+    After this session, CLAUDE.md will be tailored to you. Every future Claude
+    session in this directory will start with Claude reading it and knowing your
+    project's specifics.
+        """)
+        claude_prompt_box("CLAUDE.md CUSTOMISATION", preamble)
+        pause("After Claude finishes the CLAUDE.md review, press Enter for a final summary.")
 
 
 def final_summary(project_dir, project_name):
