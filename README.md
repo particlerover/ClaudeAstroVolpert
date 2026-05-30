@@ -63,21 +63,27 @@ That's it. No build step, no dependencies beyond Python 3 (which you already hav
 
 ## Quick Start
 
-Once installed, open a terminal in the directory where you want your **new research
-project** to live, start Claude Code, and run the setup script:
+Run the setup script as a plain Python script from any terminal — you do **not**
+need to be inside a Claude Code session to run it:
 
 ```bash
-cd ~/Research          # or wherever your projects live
-claude                 # start Claude Code
+python3 ~/ClaudeAstroVolpert/startup.py
 ```
 
-Then inside the Claude Code session:
-```
-!python3 ~/ClaudeAstroVolpert/startup.py
-```
+The script handles all the mechanical setup (directory structure, template files,
+git initialisation) on its own. At steps that require Claude's intelligence
+(digesting your literature, organising data files, customising CLAUDE.md), it
+pauses and prints a highlighted **TELL CLAUDE** box containing the exact prompt
+to use. You copy that prompt, open Claude Code in your new project directory,
+paste it, let Claude do its work, then come back and press Enter to continue.
 
-The script will walk you through everything interactively — choosing a project
-location, literature digest, data organisation, and CLAUDE.md customisation.
+After the script finishes, start your first Claude session:
+```bash
+cd ~/path/to/YourNewProject
+claude
+```
+Claude will read `CLAUDE.md` and `where_I_left_off.md` automatically and pick
+up right where the setup left off.
 
 > **Note for Windows users**: use `python` instead of `python3` if that is how
 > Python 3 is registered on your system. The script is fully cross-platform.
