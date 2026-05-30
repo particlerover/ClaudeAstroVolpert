@@ -1,39 +1,80 @@
-#!/usr/bin/env bash
-# ClaudeAstroVolpert — git pre-commit hook
+#!/usr/bin/env python3
+# ClaudeAstroVolpert — git pre-commit hook (Python, cross-platform)
+#
 # Auto-updates the "Last Edited / Last Editor" comment in CLAUDE.md whenever
-# the file is committed.
+# the file is committed. Works on Linux, macOS, and Windows (Git Bash, WSL,
+# or any environment where Python 3 is available).
 #
 # INSTALLATION (run once after setting up a new project):
 #   cp /path/to/ClaudeAstroVolpert/hooks/pre-commit .git/hooks/pre-commit
-#   chmod +x .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit        # Linux / macOS
+#   # On Windows with Git for Windows this file is picked up automatically
+#   # if Python 3 is on PATH and the shebang is #!/usr/bin/env python3.
 #
 # How it works:
 #   1. Checks whether CLAUDE.md is staged for this commit.
-#   2. If yes, rewrites the <!-- Last Edited: ... --> comment with the current
-#      date and the committing user's username (from whoami).
-#   3. Re-stages the updated CLAUDE.md so the updated header is included
-#      in the commit.
+#   2. If yes, rewrites the <!-- Last Edited: ... --> comment with the
+#      current timestamp and the committing user's OS username.
+#   3. Re-stages the updated CLAUDE.md so the header is part of the commit.
 
-CLAUDE_FILE="CLAUDE.md"
+import os
+import re
+import subprocess
+import sys
+from datetime import datetime
 
-# Only run if CLAUDE.md is staged
-if ! git diff --cached --name-only | grep -q "^${CLAUDE_FILE}$"; then
-    exit 0
-fi
+CLAUDE_FILE = "CLAUDE.md"
 
-NOW=$(date +"%Y-%m-%d %H:%M:%S")
-USER=$(whoami)
 
-# Replace the Last Edited comment line (works on macOS and Linux)
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS sed requires an empty string argument for -i
-    sed -i '' "s|<!-- Last Edited:.*-->|<!-- Last Edited: ${NOW} | Last Editor: ${USER} -->|" "${CLAUDE_FILE}"
-else
-    sed -i "s|<!-- Last Edited:.*-->|<!-- Last Edited: ${NOW} | Last Editor: ${USER} -->|" "${CLAUDE_FILE}"
-fi
+def staged_files():
+    result = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        capture_output=True, text=True,
+    )
+    return result.stdout.splitlines()
 
-# Re-stage the updated CLAUDE.md
-git add "${CLAUDE_FILE}"
 
-echo "[pre-commit] Updated CLAUDE.md header: Last Edited: ${NOW} | ${USER}"
-exit 0
+def get_username():
+    # os.getlogin() can fail in non-login shells; fall back to env vars.
+    for key in ("USER", "USERNAME", "LOGNAME"):
+        val = os.environ.get(key)
+        if val:
+            return val
+    try:
+        return os.getlogin()
+    except Exception:
+        return "unknown"
+
+
+def main():
+    if CLAUDE_FILE not in staged_files():
+        sys.exit(0)
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    user = get_username()
+
+    try:
+        with open(CLAUDE_FILE, "r", encoding="utf-8") as fh:
+            content = fh.read()
+    except FileNotFoundError:
+        sys.exit(0)  # CLAUDE.md staged but not on disk? Nothing to do.
+
+    updated = re.sub(
+        r"<!-- Last Edited:.*?-->",
+        f"<!-- Last Edited: {now} | Last Editor: {user} -->",
+        content,
+    )
+
+    if updated == content:
+        sys.exit(0)  # Pattern not found — nothing to update.
+
+    with open(CLAUDE_FILE, "w", encoding="utf-8") as fh:
+        fh.write(updated)
+
+    subprocess.run(["git", "add", CLAUDE_FILE], check=True)
+    print(f"[pre-commit] CLAUDE.md updated: Last Edited: {now} | {user}")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

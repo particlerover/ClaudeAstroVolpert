@@ -36,8 +36,49 @@ COLS = min(max(COLS, 40), 100)  # clamp to [40, 100] to avoid edge cases
 
 
 # ─── ANSI colour codes ────────────────────────────────────────────────────────
-# Used to enable/disable colour if stdout is not a tty (e.g. piped to a file).
-_USE_COLOR = sys.stdout.isatty()
+
+def _enable_color():
+    """Return True if ANSI colour codes will render in the current terminal."""
+    if not sys.stdout.isatty():
+        return False
+    if os.name == "nt":
+        # Windows: try to enable VT100 virtual terminal processing.
+        # Works on Windows 10+ (build 1511+) and Windows Terminal.
+        # Silently falls back to no colour on older consoles.
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            # ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT |
+            # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+            kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 0x0007)
+            return True
+        except Exception:
+            return False
+    return True
+
+_USE_COLOR = _enable_color()
+
+
+def _enable_unicode():
+    """Return True if the terminal encoding can render Unicode box characters."""
+    enc = getattr(sys.stdout, "encoding", "") or ""
+    return enc.lower().replace("-", "").startswith("utf")
+
+_USE_UNICODE = _enable_unicode()
+
+
+# Printable character set — Unicode where supported, ASCII fallback elsewhere.
+_CH = {
+    "hrule":  "─" if _USE_UNICODE else "-",
+    "tick":   "✓" if _USE_UNICODE else "OK",
+    "cross":  "✗" if _USE_UNICODE else "X",
+    "arrow":  "▶" if _USE_UNICODE else ">",
+    "tri":    "►" if _USE_UNICODE else ">",
+    "tee":    "├──" if _USE_UNICODE else "+--",
+    "bend":   "└──" if _USE_UNICODE else "+--",
+    "pipe":   "│"   if _USE_UNICODE else "|",
+}
+
 
 def _c(*codes):
     return "\033[" + ";".join(str(c) for c in codes) + "m" if _USE_COLOR else ""
@@ -134,19 +175,20 @@ def info(text, indent=2):
 def claude_prompt_box(label, prompt_text):
     """Print a highlighted box containing the prompt to give Claude."""
     width = COLS - 6
+    rule = _CH["hrule"] * (COLS - 4)
     print()
-    print(f"{BYELLOW}{BOLD}  {'─' * (COLS - 4)}{RESET}")
-    print(f"  {BOLD}{BYELLOW}► TELL CLAUDE:{RESET}")
-    print(f"{BYELLOW}{BOLD}  {'─' * (COLS - 4)}{RESET}")
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
+    print(f"  {BOLD}{BYELLOW}{_CH['tri']} TELL CLAUDE:{RESET}")
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
     for line in prompt_text.strip().split("\n"):
         for wline in textwrap.wrap(line.strip(), width) or [""]:
             print(f"  {BWHITE}{wline}{RESET}")
-    print(f"{BYELLOW}{BOLD}  {'─' * (COLS - 4)}{RESET}")
+    print(f"{BYELLOW}{BOLD}  {rule}{RESET}")
     print()
 
 
 def pause(msg="Press Enter when ready to continue..."):
-    print(f"\n  {BGREEN}▶{RESET}  {msg}")
+    print(f"\n  {BGREEN}{_CH['arrow']}{RESET}  {msg}")
     try:
         input("     ")
     except KeyboardInterrupt:
@@ -156,9 +198,9 @@ def pause(msg="Press Enter when ready to continue..."):
 
 def ask(prompt, default=None):
     if default:
-        full_prompt = f"  {GREEN}▶{RESET}  {prompt} [{default}]: "
+        full_prompt = f"  {GREEN}{_CH['arrow']}{RESET}  {prompt} [{default}]: "
     else:
-        full_prompt = f"  {GREEN}▶{RESET}  {prompt}: "
+        full_prompt = f"  {GREEN}{_CH['arrow']}{RESET}  {prompt}: "
     try:
         val = input(full_prompt).strip()
     except KeyboardInterrupt:
@@ -290,7 +332,7 @@ def create_project_structure(project_dir):
         shutil.copy(hook_src, hook_dst)
         hook_dst.chmod(0o755)  # make executable
 
-    print(f"  {BGREEN}✓{RESET}  {BOLD}Project directory created:{RESET} {MAGENTA}{project_dir}{RESET}")
+    print(f"  {BGREEN}{_CH['tick']}{RESET}  {BOLD}Project directory created:{RESET} {MAGENTA}{project_dir}{RESET}")
     print()
     print(f"  {DIM}Structure:{RESET}")
     for name, desc in TOP_LEVEL_DIRS:
@@ -328,7 +370,7 @@ def step_1_project_name(cwd):
         raw = ask("Full path for the new project directory\n"
                   "     (e.g. ~/Research/GalacticFilaments_2026)")
         if not raw:
-            print(f"  {RED}✗{RESET}  Please enter a path.")
+            print(f"  {RED}{_CH['cross']}{RESET}  Please enter a path.")
             continue
 
         # Expand ~ and any env vars, then resolve to absolute
@@ -337,7 +379,7 @@ def step_1_project_name(cwd):
         project_dir = project_dir.parent / name  # sanitised name
 
         if project_dir.exists():
-            print(f"  {RED}✗{RESET}  '{project_dir}' already exists. Choose a different path.")
+            print(f"  {RED}{_CH['cross']}{RESET}  '{project_dir}' already exists. Choose a different path.")
             continue
 
         print(f"\n  Resolved path: {MAGENTA}{project_dir}{RESET}")
@@ -531,12 +573,12 @@ def step_6_directory_summary(project_dir):
 
     print(f"  {BOLD}{BWHITE}{Path(project_dir).name}/{RESET}")
     for name, desc in TOP_LEVEL_DIRS:
-        print(f"  {DIM}├──{RESET} {CYAN}{name}/{RESET}")
-        print(f"  {DIM}│     {desc}{RESET}")
-    print(f"  {DIM}├──{RESET} {BOLD}CLAUDE.md{RESET}           {DIM}— Claude's project instructions (edit this){RESET}")
-    print(f"  {DIM}├──{RESET} {BOLD}constants.py{RESET}        {DIM}— Shared physical constants (import everywhere){RESET}")
-    print(f"  {DIM}├──{RESET} {BOLD}where_I_left_off.md{RESET} {DIM}— Session handoff log (auto-updated by Claude){RESET}")
-    print(f"  {DIM}└── .gitignore          — Data/ and scratch files excluded from git{RESET}")
+        print(f"  {DIM}{_CH['tee']}{RESET} {CYAN}{name}/{RESET}")
+        print(f"  {DIM}{_CH['pipe']}     {desc}{RESET}")
+    print(f"  {DIM}{_CH['tee']}{RESET} {BOLD}CLAUDE.md{RESET}           {DIM}— Claude's project instructions (edit this){RESET}")
+    print(f"  {DIM}{_CH['tee']}{RESET} {BOLD}constants.py{RESET}        {DIM}— Shared physical constants (import everywhere){RESET}")
+    print(f"  {DIM}{_CH['tee']}{RESET} {BOLD}where_I_left_off.md{RESET} {DIM}— Session handoff log (auto-updated by Claude){RESET}")
+    print(f"  {DIM}{_CH['bend']} .gitignore          — Data/ and scratch files excluded from git{RESET}")
     print()
 
     info("""\
@@ -703,7 +745,7 @@ def step_10_claude_md_review(project_dir, project_name):
 
 
 def final_summary(project_dir, project_name):
-    section("✓", "SETUP COMPLETE")
+    section(_CH["tick"], "SETUP COMPLETE")
 
     info(f"""\
     Your project '{project_name}' is ready. Here is a quick reference:
